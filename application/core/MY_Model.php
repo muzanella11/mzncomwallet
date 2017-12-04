@@ -181,9 +181,9 @@
                     }
                 } elseif ($filter === 'id') {
                     if(is_array($limit)) {
-                        $sql    =   "SELECT * FROM enem_user WHERE id='".$filter_key."' LIMIT ".$limit['startLimit'].",".$limit['limitData']."";
+                        $sql    =   "SELECT * FROM enem_user WHERE user_id='".$filter_key."' LIMIT ".$limit['startLimit'].",".$limit['limitData']."";
                     } else {
-                        $sql    =   "SELECT * FROM enem_user WHERE id='".$filter_key."'";
+                        $sql    =   "SELECT * FROM enem_user WHERE user_id='".$filter_key."'";
                     }
                 } elseif ($filter === 'create_sql') {
                     if(is_array($limit)) {
