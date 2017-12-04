@@ -54,4 +54,32 @@ class Balance extends RestManager {
 
         return $this->set_response($data, $flag === 0 ? REST_Controller::HTTP_OK : REST_Controller::HTTP_BAD_REQUEST);
     }
+
+    public function update_patch()
+    {
+        $userId = $_GET['id'];
+        $amount = $_GET['amount'];
+        $dataPost = [
+            'user_id' => $userId,
+            'amount_balance' => $amount
+        ];
+
+        $dataValidate = $this->BalanceManagement->validateUpdateBalance($dataPost);
+
+        if ($dataValidate['flag'] === 0)
+        {
+            $db = $dataPost;
+            $this->BalanceModel->updateUserBalance($db);
+            $dataBalance = $this->BalanceModel->getDataUserBalance('id', $dataPost['user_id']);
+            $data['status'] = 'Ok';
+            $data['data'] = $dataBalance;
+        }
+        else
+        {
+            unset($dataValidate['flag']);
+            $data = $dataValidate;
+        }
+
+        return $this->set_response($data, $flag === 0 ? REST_Controller::HTTP_OK : REST_Controller::HTTP_BAD_REQUEST);
+    }
 }
