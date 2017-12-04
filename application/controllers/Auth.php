@@ -69,11 +69,6 @@ class Auth extends RestManager {
         $username = $this->post('username');
         $password = $this->enem_templates->enem_secret($this->post('password'));
 
-        $data = [
-            'status' => '',
-            'messages' => ''
-        ];
-
         if ($this->enem_templates->length($username) == 0)
         {
             $flag = 1;

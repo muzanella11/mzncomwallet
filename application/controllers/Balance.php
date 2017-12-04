@@ -3,14 +3,18 @@
 defined('BASEPATH') OR exit('No direct script access allowed');
 
 require APPPATH . '/libraries/RestManager.php';
+require APPPATH . '/libraries/BalanceManagement.php';
 
 class Balance extends RestManager {
+    private $BalanceManagement;
+
     function __construct () 
     {
         // Construct the parent class
         parent::__construct();
         $this->load->model('enem_user_model');
         $this->load->model('BalanceModel');
+        $this->BalanceManagement = new BalanceManagement();
     }
 
     public function index_get() 
@@ -32,30 +36,22 @@ class Balance extends RestManager {
             'amount_balance' => $amount
         ];
 
-        $dataUser = $this->enem_user_model->getEnemUserData('id', $dataPost['user_id']);
-        $data = [
-            'status' => '',
-            'messages' => ''
-        ];
+        $dataValidate = $this->BalanceManagement->validateBalance($dataPost);
 
-        if (!$dataUser && !$amount)
+        if ($dataValidate['flag'] === 0)
         {
-            $flag = 1;
-            $data['status'] = 'Problem';
-            $data['messages'] = 'Not found user id or amount';
+            $db = $dataPost;
+            $this->BalanceModel->addUserBalance($db);
+            $dataBalance = $this->BalanceModel->getDataUserBalance('id', $dataPost['user_id']);
+            $data['status'] = 'Ok';
+            $data['data'] = $dataBalance;
         }
-        else 
+        else
         {
-            $flag = 0;
-        }
-
-        if ($flag === 0)
-        {
-            $db = array(
-                ''
-            );
+            unset($dataValidate['flag']);
+            $data = $dataValidate;
         }
 
-        var_dump($dataUser); exit;
+        return $this->set_response($data, $flag === 0 ? REST_Controller::HTTP_OK : REST_Controller::HTTP_BAD_REQUEST);
     }
 }

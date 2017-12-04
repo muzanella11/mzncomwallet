@@ -30,6 +30,41 @@
             }
         }
 
+        function getDataUserBalance($filter = NULL, $filter_key = NULL, $limit = NULL) {
+            if(!empty($filter) && !empty($filter_key)) {
+                if($filter === 'id') {
+                    if(is_array($limit)) {
+                        $sql    =   "SELECT * FROM enem_balance WHERE user_id='".$filter_key."' LIMIT ".$limit['startLimit'].",".$limit['limitData']."";
+                    } else {
+                        $sql    =   "SELECT * FROM enem_balance WHERE user_id='".$filter_key."'";
+                    }
+                } elseif ($filter === 'balance') {
+                    if(is_array($limit)) {
+                        $sql    =   "SELECT * FROM enem_balance WHERE balance='".$filter_key."' LIMIT ".$limit['startLimit'].",".$limit['limitData']."";
+                    } else {
+                        $sql    =   "SELECT * FROM enem_balance WHERE balance='".$filter_key."'";
+                    }
+                } elseif ($filter === 'create_sql') {
+                    if(is_array($limit)) {
+                        $sql    =   "SELECT * FROM enem_balance WHERE ".$filter_key." LIMIT ".$limit['startLimit'].",".$limit['limitData']."";
+                    } else {
+                        $sql    =   "SELECT * FROM enem_balance WHERE ".$filter_key."";
+                    }
+                }
+            } else {
+                if(is_array($limit)) {
+                    $sql    =   "SELECT * FROM enem_balance LIMIT ".$limit['startLimit'].",".$limit['limitData']."";
+                } else {
+                    $sql    =   "SELECT * FROM enem_balance";
+                }
+            }
+
+            $query  =   $this->db->query($sql);
+            if($query->num_rows() > 0){
+                return $query->result();
+            }
+        }
+
         function updateUserBalance($data) {
             $amount_balance    =   "amount_balance='".$data['amount_balance']."'";
 
