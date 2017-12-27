@@ -69,11 +69,6 @@ class Auth extends RestManager {
         $username = $this->post('username');
         $password = $this->enem_templates->enem_secret($this->post('password'));
 
-        $data = [
-            'status' => '',
-            'messages' => ''
-        ];
-
         if ($this->enem_templates->length($username) == 0)
         {
             $flag = 1;
@@ -137,6 +132,7 @@ class Auth extends RestManager {
         {
             $data['status'] = 'Ok';
             $data['messages'] = 'Success';
+            $data['token'] = $this->getNewToken();
         }
 
         return $this->response($data, $flag === 0 ? REST_Controller::HTTP_OK : REST_Controller::HTTP_BAD_REQUEST);
