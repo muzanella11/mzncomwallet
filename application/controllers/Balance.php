@@ -31,55 +31,79 @@ class Balance extends RestManager {
     {
         $userId = $this->post('user_id');
         $amount = $this->post('amount');
-        $dataPost = [
-            'user_id' => $userId,
-            'amount_balance' => $amount
+
+        $statusToken = $this->checkToken();
+
+        $data = [
+            'status' => 'Problem',
+            'messages' => 'Unauthorize'
         ];
 
-        $dataValidate = $this->BalanceManagement->validateBalance($dataPost);
+        if ($statusToken === 0)
+        {
+            $dataPost = [
+                'user_id' => $userId,
+                'amount_balance' => $amount
+            ];
 
-        if ($dataValidate['flag'] === 0)
-        {
-            $db = $dataPost;
-            $this->BalanceModel->addUserBalance($db);
-            $dataBalance = $this->BalanceModel->getDataUserBalance('id', $dataPost['user_id']);
-            $data['status'] = 'Ok';
-            $data['data'] = $dataBalance;
-        }
-        else
-        {
-            unset($dataValidate['flag']);
-            $data = $dataValidate;
+            $dataValidate = $this->BalanceManagement->validateBalance($dataPost);
+
+            if ($dataValidate['flag'] === 0)
+            {
+                $db = $dataPost;
+                $this->BalanceModel->addUserBalance($db);
+                $dataBalance = $this->BalanceModel->getDataUserBalance('id', $dataPost['user_id']);
+                $data['status'] = 'Ok';
+                $data['data'] = $dataBalance;
+            }
+            else
+            {
+                unset($dataValidate['flag']);
+                $data = $dataValidate;
+            }
         }
 
         return $this->set_response($data, $flag === 0 ? REST_Controller::HTTP_OK : REST_Controller::HTTP_BAD_REQUEST);
     }
 
-    public function update_patch()
+    public function update_post()
     {
-        $userId = $_GET['id'];
-        $amount = $_GET['amount'];
-        $dataPost = [
-            'user_id' => $userId,
-            'amount_balance' => $amount
+        $keyId = $this->uri->segment(3); // must be id
+        $userId = (int) $this->uri->segment(4);
+        $amount = (int) $this->post('amount');
+        $statusBalance = $this->post('addBalance');
+
+        $statusToken = $this->checkToken();
+
+        $data = [
+            'status' => 'Problem',
+            'messages' => 'Unauthorize'
         ];
 
-        $dataValidate = $this->BalanceManagement->validateUpdateBalance($dataPost);
-
-        if ($dataValidate['flag'] === 0)
+        if ($statusToken === 0)
         {
-            $db = $dataPost;
-            $this->BalanceModel->updateUserBalance($db);
-            $dataBalance = $this->BalanceModel->getDataUserBalance('id', $dataPost['user_id']);
-            $data['status'] = 'Ok';
-            $data['data'] = $dataBalance;
-        }
-        else
-        {
-            unset($dataValidate['flag']);
-            $data = $dataValidate;
+            $dataPost = [
+                'user_id' => $userId,
+                'amount_balance' => $amount
+            ];
+
+            $dataValidate = $this->BalanceManagement->validateUpdateBalance($dataPost);
+
+            if ($dataValidate['flag'] === 0)
+            {
+                $db = $dataPost;
+                $this->BalanceModel->updateUserBalance($db);
+                $dataBalance = $this->BalanceModel->getDataUserBalance('id', $dataPost['user_id']);
+                $data['status'] = 'Ok';
+                $data['data'] = $dataBalance;
+            }
+            else
+            {
+                unset($dataValidate['flag']);
+                $data = $dataValidate;
+            }
         }
 
-        return $this->set_response($data, $flag === 0 ? REST_Controller::HTTP_OK : REST_Controller::HTTP_BAD_REQUEST);
+        return $this->set_response($data, $dataValidate['flag'] === 0 ? REST_Controller::HTTP_OK : REST_Controller::HTTP_BAD_REQUEST);
     }
 }
