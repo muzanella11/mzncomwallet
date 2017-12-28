@@ -3,10 +3,8 @@
 defined('BASEPATH') OR exit('No direct script access allowed');
 
 require APPPATH . '/libraries/RestManager.php';
-require APPPATH . '/libraries/TokenManagement.php';
 
 class Auth extends RestManager {
-    private $tokenManagement;
 
     function __construct()
     {
@@ -20,8 +18,6 @@ class Auth extends RestManager {
         $this->methods['users_delete']['limit'] = 50; // 50 requests per hour per user/key
 
         $this->load->model('enem_user_model');
-        
-        $this->tokenManagement = new TokenManagement();
     }
 
     public function index_get()
@@ -30,44 +26,28 @@ class Auth extends RestManager {
             'status' => 'Ok',
             'messages' => 'Hello guys :)'
         ];
+        
         return $this->set_response($data, REST_Controller::HTTP_OK);
     }
 
     public function token_get()
     {
-        $length = 110811;
-        $token = $this->tokenManagement->getNewToken();
-        $setting_expired = array(
-            'timeby' => 'hours',
-            'value' => 1, // di set 1 jam expired nya
-        );
-
-        $configToken = array(
-            'token' => $token,
-            'setting_expired' => $setting_expired
-        );
-
-        $this->tokenManagement->initToken($configToken);
-
-        $dataMasterToken = $this->tokenManagement->getTokenByTokenId($token);
+        $token = $this->getNewToken();
 
         $data = [
-            'status' => count($dataMasterToken) > 0 ? 'Ok' : 'Problem',
+            'status' => $token ? 'Ok' : 'Problem',
             'token' => $token
         ];
+
         return $this->response($data, REST_Controller::HTTP_OK);
     }
 
     public function check_token_get()
     {
-        $dataHeader = $this->getHeaderData();
-        $getTokenHeader = explode(' ', $dataHeader['Authorization'])[1];
-
-        $checkToken = $this->enem_user_model->getDataTokenUserManagementByToken($getTokenHeader);
-        $statusToken = $this->enem_templates->check_expired_time($checkToken[0]->token_expired);
+        $statusToken = $this->checkToken();
 
         $data = [
-            'status' => 'Ok',
+            'status' => 'Problem',
             'messages' => 'Unauthorize'
         ];
 
@@ -87,16 +67,75 @@ class Auth extends RestManager {
     public function authorization_post()
     {
         $username = $this->post('username');
-        $password = $this->post('password');
-        $status = '';
-        $messages = '';
+        $password = $this->enem_templates->enem_secret($this->post('password'));
 
-        $data = [
-            'status' => $status,
-            'message' => $messages
-        ];
+        if ($this->enem_templates->length($username) == 0)
+        {
+            $flag = 1;
+            $data['status'] = 'Problem';
+            $data['messages'] = 'Please insert email or username';
+        }
+        elseif (strpos($username, '@')) 
+        {
+            $dataUser = $this->enem_user_model->getEnemUserData('email', $username);
+            if ($this->enem_templates->length($username) == 0)
+            {
+                $flag = 1;
+                $data['status'] = 'Problem';
+                $data['messages'] = 'Please insert email';
+            }
+            elseif (!filter_var($username, FILTER_VALIDATE_EMAIL)) 
+            {
+                $flag = 1;
+                $data['status'] = 'Problem';
+                $data['messages'] = 'Wrong format email';
+            }
+            elseif (!$dataUser) 
+            {
+                $flag = 1;
+                $data['status'] = 'Problem';
+                $data['messages'] = 'Not found email registered';
+            }
+            elseif ($dataUser[0]->password !== $password) 
+            {
+                $flag = 1;
+                $data['status'] = 'Problem';
+                $data['messages'] = 'Credential not match';
+            }
+            else
+            {
+                $flag = 0;
+            }
+        }
+        else 
+        {
+            $dataUser = $this->enem_user_model->getEnemUserData('username', $username);
+            if (!$dataUser) 
+            {
+                $flag = 1;
+                $data['status'] = 'Problem';
+                $data['messages'] = 'Not found username registered';
+            }
+            elseif ($dataUser[0]->password !== $password) 
+            {
+                $flag = 1;
+                $data['status'] = 'Problem';
+                $data['messages'] = 'Credential not match';
+            }
+            else
+            {
+                $flag = 0;
+            }
+        }
 
-        return $this->response($data, REST_Controller::HTTP_OK);
+        if ($flag === 0)
+        {
+            $data['status'] = 'Ok';
+            $data['messages'] = 'Success';
+            $data['token'] = $this->getNewToken();
+        }
+
+        return $this->response($data, $flag === 0 ? REST_Controller::HTTP_OK : REST_Controller::HTTP_BAD_REQUEST);
     }
 
 }
